@@ -33,9 +33,9 @@ namespace CLDV6212_ST10339829_POE
             return customers.Results;
         }
 
-        public async Task AddProductTableAsync(Customer customer)
+        public async Task AddProductTableAsync(Product product)
         {
-            var insertProduct = TableOperation.Insert(customer);
+            var insertProduct = TableOperation.Insert(product);
             await _productCloudTable.ExecuteAsync(insertProduct);
         }
 
