@@ -21,13 +21,10 @@ public class TableService
 
     public async Task AddCustomerTableAsync(Customer customer)
     {
-        // Generate a new CID before adding the customer
         customer.CID = await GetNextCIDAsync();
 
-        // Set the RowKey after CID is generated
         customer.SetRowKey();
 
-        // Ensure customer entity is valid
         if (string.IsNullOrEmpty(customer.PartitionKey) || string.IsNullOrEmpty(customer.RowKey))
         {
             throw new InvalidOperationException("PartitionKey and RowKey must be set.");
@@ -48,11 +45,11 @@ public class TableService
     private async Task<int> GetNextCIDAsync()
     {
         var query = new TableQuery<Customer>()
-            .Select(new string[] { "CID" }); // Only select the CID column
+            .Select(new string[] { "CID" }); 
 
         var customers = await _customerCloudTable.ExecuteQuerySegmentedAsync(query, null);
-        var maxCID = customers.Results.Max(c => c.CID.HasValue ? c.CID.Value : 0); // Determine max CID, default to 0 if null
-        return maxCID + 1; // Increment by 1
+        var maxCID = customers.Results.Max(c => c.CID.HasValue ? c.CID.Value : 0); 
+        return maxCID + 1; 
     }
 
     public async Task AddProductTableAsync(Product product)

@@ -16,10 +16,13 @@ namespace CLDV6212_ST10339829_POE
         public async Task UploadAsync(IFormFile formFile)
         {
             var directory = _share.GetRootDirectoryClient();
-            var file = directory.GetFileClient(formFile.FileName);
+            var fileClient = directory.GetFileClient(formFile.FileName);
+
             using var readStream = formFile.OpenReadStream();
-            await file.CreateAsync(readStream.Length);
-            await file.UploadAsync(readStream);
+
+            await fileClient.CreateAsync(readStream.Length);
+
+            await fileClient.UploadAsync(readStream); 
         }
 
         public async Task<List<string>> FilesAsync()

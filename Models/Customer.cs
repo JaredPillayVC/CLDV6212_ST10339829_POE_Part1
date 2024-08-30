@@ -16,19 +16,17 @@ namespace CLDV6212_ST10339829_POE.Models
 
         public Customer()
         {
-            PartitionKey = "Customer"; // Ensure non-null, valid PartitionKey
+            PartitionKey = "Customer"; 
         }
 
         public void SetRowKey()
         {
             if (!CID.HasValue)
             {
-                // Generate a new unique RowKey if CID is null
                 RowKey = Guid.NewGuid().ToString();
             }
             else
             {
-                // Ensure CID is non-null and use it as RowKey
                 RowKey = CID.ToString();
             }
         }
