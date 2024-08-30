@@ -15,17 +15,16 @@ namespace CLDV6212_ST10339829_POE
         {
             await _client.SendMessageAsync(message);
         }
-        public async Task<List<string>> RetriveMessagesAsync() 
-        { 
+        public async Task<List<string>> RetriveMessagesAsync()
+        {
             var message = new List<string>();
             var response = await _client.ReceiveMessagesAsync(maxMessages: 7);
-            foreach (var item in response.Value) 
+            foreach (var item in response.Value)
             {
                 message.Add(item.MessageText);
                 await _client.DeleteMessageAsync(item.MessageId, item.PopReceipt);
             }
             return message;
         }
-
     }
 }
