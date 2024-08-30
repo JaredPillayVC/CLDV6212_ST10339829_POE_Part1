@@ -1,49 +1,85 @@
 ﻿using CLDV6212_ST10339829_POE.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos.Table;
 
-namespace CLDV6212_ST10339829_POE
+public class TableService
 {
-    public class TableService
+    private readonly CloudTableClient _cloudTableClient;
+    private readonly CloudTable _customerCloudTable;
+    private readonly CloudTable _productCloudTable;
+
+    public TableService(string connectionString)
     {
-        private readonly CloudTableClient _cloudTableClient;
-        private readonly CloudTable _customerCloudTable;
-        private readonly CloudTable _productCloudTable;
+        CloudStorageAccount cloudStorageAccount = CloudStorageAccount.Parse(connectionString);
+        _cloudTableClient = cloudStorageAccount.CreateCloudTableClient(new TableClientConfiguration());
+        _customerCloudTable = _cloudTableClient.GetTableReference("Customers");
+        _productCloudTable = _cloudTableClient.GetTableReference("Products");
 
-        public TableService(string connectionString)
+        _customerCloudTable.CreateIfNotExists();
+        _productCloudTable.CreateIfNotExists();
+    }
+
+    public async Task AddCustomerTableAsync(Customer customer)
+    {
+        // Generate a new CID before adding the customer
+        customer.CID = await GetNextCIDAsync();
+
+        // Set the RowKey after CID is generated
+        customer.SetRowKey();
+
+        // Ensure customer entity is valid
+        if (string.IsNullOrEmpty(customer.PartitionKey) || string.IsNullOrEmpty(customer.RowKey))
         {
-            CloudStorageAccount cloudStorageAccount = CloudStorageAccount.Parse(connectionString);
-            _cloudTableClient = cloudStorageAccount.CreateCloudTableClient(new TableClientConfiguration());
-            _customerCloudTable = _cloudTableClient.GetTableReference("Customers");
-            _productCloudTable = _cloudTableClient.GetTableReference("Products");
-
-            _customerCloudTable.CreateIfNotExists();
-            _productCloudTable.CreateIfNotExists();
+            throw new InvalidOperationException("PartitionKey and RowKey must be set.");
         }
 
-        public async Task AddCustomerTableAsync(Customer customer) 
-        { 
-            var insertCustomer = TableOperation.Insert(customer);
-            await _customerCloudTable.ExecuteAsync(insertCustomer);
-        }
+        var insertCustomer = TableOperation.Insert(customer);
+        await _customerCloudTable.ExecuteAsync(insertCustomer);
+    }
 
-        public async Task<List<Customer>> GetCustomersAsync()
-        { 
-            var query = new TableQuery<Customer>();
-            var customers = await _customerCloudTable.ExecuteQuerySegmentedAsync(query, null);
-            return customers.Results;
-        }
 
-        public async Task AddProductTableAsync(Product product)
+    public async Task<List<Customer>> GetCustomersAsync()
+    {
+        var query = new TableQuery<Customer>();
+        var customers = await _customerCloudTable.ExecuteQuerySegmentedAsync(query, null);
+        return customers.Results;
+    }
+
+    private async Task<int> GetNextCIDAsync()
+    {
+        var query = new TableQuery<Customer>()
+            .Select(new string[] { "CID" }); // Only select the CID column
+
+        var customers = await _customerCloudTable.ExecuteQuerySegmentedAsync(query, null);
+        var maxCID = customers.Results.Max(c => c.CID.HasValue ? c.CID.Value : 0); // Determine max CID, default to 0 if null
+        return maxCID + 1; // Increment by 1
+    }
+
+    public async Task AddProductTableAsync(Product product)
+    {
+        product.PID = await GetNextPIDAsync();
+
+        product.SetRowKey();
+
+        if (string.IsNullOrEmpty(product.PartitionKey) || string.IsNullOrEmpty(product.RowKey))
         {
-            var insertProduct = TableOperation.Insert(product);
-            await _productCloudTable.ExecuteAsync(insertProduct);
+            throw new InvalidOperationException("PartitionKey and RowKey must be set.");
         }
-
-        public async Task<List<Product>> GetProductsAsync()
-        {
-            var query = new TableQuery<Product>();
-            var products = await _productCloudTable.ExecuteQuerySegmentedAsync(query, null);
-            return products.Results;
-        }
+        var insertProduct = TableOperation.Insert(product);
+        await _productCloudTable.ExecuteAsync(insertProduct);
+    }
+    public async Task<List<Product>> GetProductsAsync()
+    {
+        var query = new TableQuery<Product>();
+        var products = await _productCloudTable.ExecuteQuerySegmentedAsync(query, null);
+        return products.Results;
+    }
+    private async Task<int> GetNextPIDAsync()
+    {
+        var query = new TableQuery<Product>()
+            .Select(new string[] { "PID" }); 
+        var product = await _productCloudTable.ExecuteQuerySegmentedAsync(query, null);
+        var maxPID = product.Results.Max(c => c.PID.HasValue ? c.PID.Value : 0); 
+        return maxPID + 1; 
     }
 }

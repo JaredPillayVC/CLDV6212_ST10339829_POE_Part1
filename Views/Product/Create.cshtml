@@ -4,6 +4,10 @@
 
 <form asp-action="Create" method="post">
     <div class="form-group">
+        <label>Product ID</label>
+        <input asp-for="PID" class="form-control" required />
+    </div>
+    <div class="form-group">
         <label>Product Name</label>
         <input asp-for="Name" class="form-control" required />
     </div>
